@@ -1,7 +1,7 @@
 package ui;
 
 import model.Ticket;
-import persistance.TicketRepository;  // Import corregido
+import persistence.TicketRepository;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -12,13 +12,12 @@ import java.util.List;
 public class TicketPanel extends JPanel {
 
     private JTable ticketTable;
-    private DefaultTableModel tableModel;          // Ya no es estático
+    private DefaultTableModel tableModel;
     private TicketRepository ticketRepository;
 
-    public TicketPanel() {
+    public TicketPanel(TicketRepository ticketRepository) {
+        this.ticketRepository = ticketRepository;
         setLayout(new BorderLayout());
-        // Usar la misma ruta que tu HelpDeskApp al crear el repositorio
-        ticketRepository = new TicketRepository("data/tickets.csv");
         initializeTable();
         loadTickets();
     }
@@ -28,7 +27,13 @@ public class TicketPanel extends JPanel {
                 "Tracking ID", "Updated", "Name", "Subject",
                 "Status", "Last Replier", "Priority"
         };
-        tableModel = new DefaultTableModel(columnNames, 0);
+        // Modelo con celdas no editables
+        tableModel = new DefaultTableModel(columnNames, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         ticketTable = new JTable(tableModel);
         ticketTable.setFillsViewportHeight(true);
 
@@ -37,17 +42,8 @@ public class TicketPanel extends JPanel {
     }
 
     private void loadTickets() {
-        // Limpiamos cualquier fila previa
         tableModel.setRowCount(0);
-
-        List<Ticket> tickets;
-        try {
-            tickets = ticketRepository.loadAll();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
+        List<Ticket> tickets = ticketRepository.loadAll();
         for (Ticket t : tickets) {
             Object[] row = {
                     t.getTrackingId(),
@@ -62,7 +58,6 @@ public class TicketPanel extends JPanel {
         }
     }
 
-    /** Permite recargar la tabla tras cambios en el CSV */
     public void refresh() {
         loadTickets();
     }
